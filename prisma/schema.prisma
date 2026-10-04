@@ -1,0 +1,142 @@
+// Prisma Schema for GURUVANTA ITs SOLUTION PVT LTD
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== User / Admin =====
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignedLeads Lead[]     @relation("AssignedLeads")
+  leadNotes     LeadNote[]
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+// ===== Lead / Enquiry =====
+model Lead {
+  id            String       @id @default(cuid())
+  name          String
+  companyName   String?
+  email         String
+  phone         String
+  service       String
+  budget        String?
+  description   String       @db.Text
+  contactMethod String?
+  status        LeadStatus   @default(NEW)
+  assignedTo    String?
+  assignedUser  User?        @relation("AssignedLeads", fields: [assignedTo], references: [id])
+  notes         LeadNote[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
+}
+
+model LeadNote {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+}
+
+// ===== Portfolio / Projects =====
+model Project {
+  id           String   @id @default(cuid())
+  title        String
+  slug         String   @unique
+  description  String   @db.Text
+  category     String
+  technologies String[]
+  image        String?
+  demoUrl      String?
+  caseStudy    String?  @db.Text
+  published    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([category])
+  @@index([published])
+}
+
+// ===== Services =====
+model Service {
+  id               String   @id @default(cuid())
+  title            String
+  slug             String   @unique
+  shortDescription String
+  description      String   @db.Text
+  icon             String?
+  features         String[]
+  technologies     String[]
+  published        Boolean  @default(true)
+  order            Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([published])
+}
+
+// ===== Testimonials =====
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  company   String?
+  role      String?
+  content   String   @db.Text
+  rating    Int      @default(5)
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ===== Contact Messages =====
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  message   String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([read])
+}
+
+// ===== Site Settings =====
+model SiteSettings {
+  id    String @id @default("default")
+  key   String @unique
+  value String @db.Text
+}
